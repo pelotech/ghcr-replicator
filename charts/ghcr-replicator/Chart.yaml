@@ -1,0 +1,11 @@
+apiVersion: v2
+name: ghcr-replicator
+description: Mirror container images from ghcr.io into Harbor with Harbor-style replication rules, including wildcard name filters.
+type: application
+# Overwritten from the git tag at release time.
+version: 0.0.0
+appVersion: "0.0.0"
+home: https://github.com/pelotech/ghcr-replicator
+sources:
+  - https://github.com/pelotech/ghcr-replicator
+keywords: [harbor, ghcr, replication, mirror]

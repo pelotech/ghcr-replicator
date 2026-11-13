@@ -1,0 +1,89 @@
+{{- $credentialsSecret := required "credentials.secretName is required: the name of a Secret with GHCR_USERNAME, GHCR_TOKEN, HARBOR_USERNAME and HARBOR_PASSWORD" .Values.credentials.secretName -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "ghcr-replicator.fullname" . }}
+  labels:
+    {{- include "ghcr-replicator.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  {{- with .Values.timeZone }}
+  timeZone: {{ . }}
+  {{- end }}
+  suspend: {{ .Values.suspend }}
+  concurrencyPolicy: {{ .Values.concurrencyPolicy }}
+  startingDeadlineSeconds: {{ .Values.startingDeadlineSeconds }}
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: {{ .Values.ttlSecondsAfterFinished }}
+      template:
+        metadata:
+          annotations:
+            checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+            {{- with .Values.podAnnotations }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          labels:
+            {{- include "ghcr-replicator.selectorLabels" . | nindent 12 }}
+            {{- with .Values.podLabels }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+        spec:
+          restartPolicy: Never
+          serviceAccountName: {{ include "ghcr-replicator.serviceAccountName" . }}
+          automountServiceAccountToken: false
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          containers:
+            - name: ghcr-replicator
+              image: {{ include "ghcr-replicator.image" . | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args:
+                - -config=/etc/ghcr-replicator/config.yaml
+                - -timeout={{ .Values.timeout }}
+                - -log-level={{ .Values.logLevel }}
+                {{- if .Values.dryRun }}
+                - -dry-run
+                {{- end }}
+                {{- with .Values.extraArgs }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+              envFrom:
+                - secretRef:
+                    name: {{ $credentialsSecret }}
+              {{- with .Values.extraEnv }}
+              env:
+                {{- toYaml . | nindent 16 }}
+              {{- end }}
+              securityContext:
+                {{- toYaml .Values.securityContext | nindent 16 }}
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              volumeMounts:
+                - name: config
+                  mountPath: /etc/ghcr-replicator
+                  readOnly: true
+          volumes:
+            - name: config
+              configMap:
+                name: {{ include "ghcr-replicator.fullname" . }}
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
