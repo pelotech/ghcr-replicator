@@ -161,7 +161,7 @@ func (e *env) run(cfg *config.Config, dryRun bool) []Result {
 	if err != nil {
 		e.t.Fatal(err)
 	}
-	res, err := r.Run(context.Background(), cfg.Rules)
+	res, err := r.Run(e.t.Context(), cfg.Rules)
 	if err != nil {
 		e.t.Fatal(err)
 	}
@@ -416,7 +416,7 @@ func TestFailuresAreCountedNotFatal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := r.Run(context.Background(), cfg.Rules)
+	res, err := r.Run(t.Context(), cfg.Rules)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -468,14 +468,14 @@ func TestDestinationCredentialsAreUsed(t *testing.T) {
 
 	// Without credentials, the copy fails.
 	r, _ := New(cfg, Options{Lister: e.lister})
-	res, _ := r.Run(context.Background(), cfg.Rules)
+	res, _ := r.Run(t.Context(), cfg.Rules)
 	assertResult(t, res[0], Result{Rule: "auth", Failed: 1})
 
 	// With credentials, the copy succeeds.
 	kc := Keychain{}
 	kc.Add(e.dst, "robot$replicator", "pw")
 	r, _ = New(cfg, Options{Lister: e.lister, Keychain: kc})
-	res, _ = r.Run(context.Background(), cfg.Rules)
+	res, _ = r.Run(t.Context(), cfg.Rules)
 	assertResult(t, res[0], Result{Rule: "auth", Copied: 1})
 }
 
@@ -500,7 +500,7 @@ func TestNoPlainHTTPWithoutInsecure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, _ := r.Run(context.Background(), cfg.Rules)
+	res, _ := r.Run(t.Context(), cfg.Rules)
 
 	assertResult(t, res[0], Result{Rule: "apps", Failed: 1})
 	if n := dstRequests.Load(); n != 0 {

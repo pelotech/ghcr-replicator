@@ -15,7 +15,7 @@ import (
 )
 
 func TestListRepositoriesStopsWhenCancelled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 
 	// Each page links to a next page. The server cancels ctx while it
