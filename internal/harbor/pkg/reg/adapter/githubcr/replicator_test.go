@@ -30,7 +30,7 @@ func TestListRepositoriesStopsWhenCancelled(t *testing.T) {
 	}))
 	defer server.Close()
 
-	_, err := NewLister(server.URL, "", "", "", server.Client()).ListRepositories(ctx, "my-org/**")
+	_, err := NewLister(server.URL, "", "", "").ListRepositories(ctx, "my-org/**")
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.Canceled)
 	assert.Equal(t, int32(1), requests.Load(), "no page after the first should be requested")

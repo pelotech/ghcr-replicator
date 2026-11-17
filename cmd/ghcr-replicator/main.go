@@ -15,7 +15,6 @@ import (
 	"flag"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"slices"
@@ -80,7 +79,7 @@ func run(args []string, getenv func(string) string) int {
 	kc.Add(cfg.Destination.Registry, creds.harborUser, creds.harborPassword)
 
 	ua := "ghcr-replicator/" + version
-	lister := githubcr.NewLister(cfg.Source.APIURL, creds.ghcrUser, creds.ghcrToken, ua, &http.Client{Timeout: 30 * time.Second})
+	lister := githubcr.NewLister(cfg.Source.APIURL, creds.ghcrUser, creds.ghcrToken, ua)
 
 	r, err := replicate.New(cfg, replicate.Options{
 		Lister:    lister,

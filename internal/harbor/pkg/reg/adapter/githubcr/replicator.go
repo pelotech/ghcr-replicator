@@ -7,6 +7,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	common_http "github.com/pelotech/ghcr-replicator/internal/harbor/common/http"
 	"github.com/pelotech/ghcr-replicator/internal/harbor/common/http/modifier"
@@ -28,20 +29,19 @@ type Lister struct {
 	modifiers []modifier.Modifier
 }
 
+// requestTimeout is the maximum time for one GitHub API request.
+const requestTimeout = 30 * time.Second
+
 // NewLister returns a Lister. apiURL is the GitHub REST API URL. If it is
 // empty, NewLister uses https://api.github.com. If username is empty, the
-// requests use anonymous access. If client is nil, NewLister uses a new
-// http.Client.
-func NewLister(apiURL, username, token, userAgent string, client *http.Client) *Lister {
+// requests use anonymous access. Each request has a timeout of 30 seconds.
+func NewLister(apiURL, username, token, userAgent string) *Lister {
 	if apiURL == "" {
 		apiURL = githubAPIURL
 	}
-	if client == nil {
-		client = &http.Client{}
-	}
 	return &Lister{
 		apiURL: strings.TrimRight(apiURL, "/"),
-		client: client,
+		client: &http.Client{Timeout: requestTimeout},
 		// The client sends the token as basic auth, not as a bearer token,
 		// because the client in the Harbor GHCR adapter does the same. GitHub
 		// accepts a token as the basic auth password.
