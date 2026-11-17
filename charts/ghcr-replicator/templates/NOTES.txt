@@ -1,0 +1,7 @@
+ghcr-replicator runs on schedule "{{ .Values.schedule }}" ({{ .Values.timeZone }}){{ if .Values.suspend }} - SUSPENDED{{ end }}{{ if .Values.dryRun }} in DRY-RUN mode{{ end }}.
+
+Trigger a run now:
+  kubectl -n {{ .Release.Namespace }} create job --from=cronjob/{{ include "ghcr-replicator.fullname" . }} {{ include "ghcr-replicator.fullname" . }}-manual
+
+Follow it:
+  kubectl -n {{ .Release.Namespace }} logs -f job/{{ include "ghcr-replicator.fullname" . }}-manual

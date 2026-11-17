@@ -1,0 +1,57 @@
+# ghcr-replicator config: the full reference for every option.
+# All rules run. To stop a rule, remove it.
+# A test loads this file, so it always parses and validates.
+#
+# Each rule mirrors a Harbor pull-replication policy; the matching Harbor UI
+# field is noted in [brackets].
+#
+# Name filter semantics are Harbor's (doublestar v1):
+#   my-org/apps/**   everything nested under apps/ (any depth)
+#   my-org/apps*     one level only: apps, apps-bundles ... NOT apps/api
+#   my-org/{a,b}     exact names: no package listing needed
+# The first path component (the GitHub owner) must be literal or {a,b}.
+
+source:
+  registry: ghcr.io                  # default
+  apiURL: https://api.github.com     # default; GitHub Packages API, used to list packages
+  insecure: false                    # default; true allows plain HTTP (testing only). Does not skip TLS verification.
+
+destination:
+  registry: harbor.example.com       # required; a host, not a URL (no https://)
+  insecure: false                    # default
+
+concurrency: 4                       # default 4 (1-64); repositories listed / copied at once, per rule. Tags of one repository copy in sequence.
+
+rules:
+  # Every rule option, with defaults noted.
+  - name: team-apps                  # required, unique; shown in logs, selectable with -rules
+    filters:
+      name: "my-org/apps/**"         # required                           [Source resource filter: Name]
+      tag: "{,v}[0-9]*.[0-9]*.[0-9]*" # default: every tag                [Source resource filter: Tag]
+      tagDecoration: matches         # matches (default) | excludes       [Tag: matching / excluding]
+    destNamespace: apps              # Harbor project, must already exist [Destination namespace]
+                                     # (empty: keep the source path as-is, e.g. project my-org)
+    destNamespaceReplace: 2          # default 1; -1 all, 0 none, N strip N leading levels [Flattening]
+    override: true                   # default true; replace a tag whose digest differs [Override]
+
+  # Typical rules: only the options that differ from the defaults.
+  - name: platform-charts
+    filters:
+      name: "my-org/charts/**"
+      tag: "{,v}[0-9]*.[0-9]*.[0-9]*"
+    destNamespace: platform/charts
+    destNamespaceReplace: 2
+
+  - name: explicit-apps
+    filters:
+      name: "my-org/{app-a,app-b}"
+      tag: "{,v}[0-9]*.[0-9]*.[0-9]*"
+    destNamespace: apps
+
+  - name: containers-no-rc
+    filters:
+      name: "my-org/containers/**"
+      tag: "*-rc*"
+      tagDecoration: excludes
+    destNamespace: content/containers
+    destNamespaceReplace: 2

@@ -1,0 +1,11 @@
+{{- $_ := required "config.destination.registry is required" .Values.config.destination.registry -}}
+{{- if not .Values.config.rules }}{{ fail "config.rules must contain at least one rule" }}{{ end -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ghcr-replicator.fullname" . }}
+  labels:
+    {{- include "ghcr-replicator.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    {{- toYaml .Values.config | nindent 4 }}
